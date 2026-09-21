@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photobooth 📸 Strip Photo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1rem;
+    color: #fff;
+  }
+
+  .container {
+    max-width: 1100px;
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(15px);
+    border-radius: 2rem;
+    padding: 1.5rem;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin-bottom: 0.3rem;
+    background: linear-gradient(135deg, #f9e3a0, #ff6b9d, #a29bfe);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #9ab0d0;
+    font-size: 0.85rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.2rem;
+  }
+
+  @media (max-width: 850px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ===== AREA FOTO ===== */
+  .photo-stage {
+    background: #0a0e1a;
+    border-radius: 1.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 420px;
+    border: 2px solid rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .camera-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 4/3;
+    background: #000;
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+  }
+
+  #video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+
+  #video.filter-vintage { filter: sepia(0.55) contrast(1.1) saturate(0.85) brightness(1.05) hue-rotate(-10deg); }
+  #video.filter-film { filter: contrast(1.2) saturate(0.75) brightness(0.98) sepia(0.2) hue-rotate(15deg); }
+  #video.filter-mono { filter: grayscale(1) contrast(1.25) brightness(1.05); }
+
+  .countdown {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 30px #ff6b9d, 0 0 60px #ff6b9d;
+    background: rgba(0,0,0,0.4);
+    z-index: 10;
+    animation: pop 0.9s ease-out;
+    pointer-events: none;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .flash {
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    z-index: 20;
+    pointer-events: none;
+  }
+
+  .flash.active { animation: flashAnim 0.35s; }
+
+  @keyframes flashAnim {
+    0% { opacity: 0; }
+    30% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* ===== PANEL KONTROL ===== */
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .panel::-webkit-scrollbar { width: 6px; }
+  .panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+  .section {
+    background: rgba(0,0,0,0.3);
+    border-radius: 1.2rem;
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .section-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #ffd966;
+    margin-bottom: 0.7rem;
+    font-weight: 700;
+  }
+
+  /* Pilihan strip */
+  .strip-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .strip-opt {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid transparent;
+    border-radius: 0.8rem;
+    padding: 0.7rem 0.4rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #b8c9e8;
+  }
+
+  .strip-opt:hover { background: rgba(255,255,255,0.12); }
+
+  .strip-opt.active {
+    border-color: #ff6b9d;
+    background: rgba(255,107,157,0.2);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255,107,157,0.4);
+  }
+
+  .strip-opt .strip-icon {
+    font-size: 1.3rem;
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .strip-opt .strip-name { font-size: 0.75rem; font-weight: 600; }
+  .strip-opt .strip-count { font-size: 0.65rem; opacity: 0.7; }
+
+  /* Filter */
+  .filter-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .filter-opt {
+    background: rgba(255,255,255,0.06);
+    border: 2px solid transparent;
+    border-radius: 0.8rem;
+    padding: 0.6rem 0.3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.7rem;
+    color: #b8c9e8;
+    font-weight: 600;
+  }
+
+  .filter-opt:hover { background: rgba(255,255,255,0.12); }
+
+  .filter-opt.active {
+    border-color: #a29bfe;
+    background: rgba(162,155,254,0.2);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(162,155,254,0.4);
+  }
+
+  .filter-opt .filter-swatch {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    margin-bottom: 0.3rem;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .swatch-normal { background: linear-gradient(135deg, #74b9ff, #0984e3); }
+  .swatch-vintage { background: linear-gradient(135deg, #d4a373, #a67c52, #7a5c3a); }
+  .swatch-film { background: linear-gradient(135deg, #5a4a3a, #3d3226, #2a2118); }
+  .swatch-mono { background: linear-gradient(135deg, #fff, #888, #222); }
+
+  /* Tombol */
+  .btn {
+    border: none;
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: white;
+    width: 100%;
+    transition: all 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .btn:active { transform: translateY(3px); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #ff6b9d, #c44569);
+    box-shadow: 0 5px 0 #8b2d4a;
+  }
+  .btn-primary:active { box-shadow: 0 2px 0 #8b2d4a; }
+
+  .btn-capture {
+    background: linear-gradient(135deg, #00b894, #009432);
+    box-shadow: 0 5px 0 #006644;
+    font-size: 1.05rem;
+    padding: 1.1rem;
+  }
+  .btn-capture:active { box-shadow: 0 2px 0 #006644; }
+
+  .btn-capture.recording {
+    background: linear-gradient(135deg, #ff4757, #c0392b);
+    box-shadow: 0 5px 0 #7a1a1a;
+    animation: pulseRec 1s infinite;
+  }
+
+  @keyframes pulseRec {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+
+  .btn-secondary {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+    font-size: 0.85rem;
+  }
+
+  /* Preview hasil */
+  .preview-area {
+    margin-top: 0.8rem;
+    padding: 0.8rem;
+    background: rgba(0,0,0,0.3);
+    border-radius: 1rem;
+    text-align: center;
+    display: none;
+  }
+
+  .preview-area.show { display: block; }
+
+  .preview-img {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 0.8rem;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    margin-bottom: 0.7rem;
+  }
+
+  .progress-info {
+    font-size: 0.75rem;
+    color: #9ab0d0;
+    text-align: center;
+    margin-top: 0.3rem;
+  }
+
+  .btn-row { display: flex; gap: 0.5rem; }
+
+  /* Modal Edit */
+  .editor-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s;
+  }
+
+  .editor-modal.show { opacity: 1; visibility: visible; }
+
+  .editor-card {
+    background: #1a1a2e;
+    border-radius: 1.5rem;
+    padding: 1.2rem;
+    max-width: 900px;
+    width: 100%;
+    max-height: 95vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+  }
+
+  .editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .editor-header h2 { font-size: 1.2rem; color: #ffd966; }
+
+  .editor-body {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 1rem;
+  }
+
+  @media (max-width: 750px) {
+    .editor-body { grid-template-columns: 1fr; }
+  }
+
+  .editor-canvas-wrap {
+    background: #0a0e1a;
+    border-radius: 1rem;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+  }
+
+  #editorCanvas {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+
+  .editor-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .control-group {
+    background: rgba(0,0,0,0.3);
+    border-radius: 0.9rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .control-group label {
+    display: block;
+    font-size: 0.75rem;
+    color: #ffd966;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .control-group input[type="text"],
+  .control-group textarea,
+  .control-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  .control-group input[type="color"] {
+    width: 100%;
+    height: 40px;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .control-group input[type="range"] {
+    width: 100%;
+    accent-color: #ff6b9d;
+  }
+
+  .emoji-picker {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.3rem;
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 0.3rem;
+    background: rgba(0,0,0,0.3);
+    border-radius: 0.5rem;
+  }
+
+  .emoji-btn {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    border-radius: 0.4rem;
+    padding: 0.4rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .emoji-btn:hover { background: rgba(255,107,157,0.3); transform: scale(1.15); }
+
+  .editor-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .editor-actions .btn { flex: 1; }
+
+  .stickers-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  .sticker-item {
+    position: absolute;
+    font-size: 2rem;
+    cursor: move;
+    pointer-events: auto;
+    user-select: none;
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.6));
+    transform-origin: center;
+    transition: transform 0.1s;
+  }
+
+  .sticker-item.selected {
+    outline: 2px dashed #ffd966;
+    outline-offset: 3px;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📸 PHOTOBOOTH SIMPEL</h1>
+  <p class="subtitle">Pilih strip → filter → jepret! Edit hasilnya dengan teks & stiker 🎨</p>
+
+  <div class="layout">
+    <!-- KIRI: Preview kamera -->
+    <div class="photo-stage">
+      <div class="camera-wrap" id="cameraWrap">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="countdown hidden" id="countdown"></div>
+        <div class="flash" id="flash"></div>
+        <canvas id="captureCanvas" class="hidden"></canvas>
+      </div>
+      <p class="progress-info" id="progressInfo">Foto: 0 / 0</p>
+
+      <div class="preview-area" id="previewArea">
+        <img id="previewImg" class="preview-img" alt="Hasil">
+        <div class="btn-row">
+          <button class="btn btn-primary" id="editBtn">🎨 EDIT</button>
+          <button class="btn btn-primary" id="downloadBtn">⬇️ DOWNLOAD</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KANAN: Panel kontrol -->
+    <div class="panel">
+      <div class="section">
+        <div class="section-title">🎞️ Pilih Strip</div>
+        <div class="strip-options" id="stripOptions">
+          <div class="strip-opt active" data-count="3">
+            <span class="strip-icon">🎞️</span>
+            <span class="strip-name">Klasik</span>
+            <span class="strip-count">3 Foto</span>
+          </div>
+          <div class="strip-opt" data-count="4">
+            <span class="strip-icon">📽️</span>
+            <span class="strip-name">Standar</span>
+            <span class="strip-count">4 Foto</span>
+          </div>
+          <div class="strip-opt" data-count="2">
+            <span class="strip-icon">💕</span>
+            <span class="strip-name">Duo</span>
+            <span class="strip-count">2 Foto</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">🎨 Filter</div>
+        <div class="filter-options" id="filterOptions">
+          <div class="filter-opt active" data-filter="normal">
+            <div class="filter-swatch swatch-normal"></div>
+            Normal
+          </div>
+          <div class="filter-opt" data-filter="vintage">
+            <div class="filter-swatch swatch-vintage"></div>
+            Vintage
+          </div>
+          <div class="filter-opt" data-filter="film">
+            <div class="filter-swatch swatch-film"></div>
+            Film
+          </div>
+          <div class="filter-opt" data-filter="mono">
+            <div class="filter-swatch swatch-mono"></div>
+            Mono
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📷 Kontrol</div>
+        <button class="btn btn-capture" id="captureBtn">📸 MULAI FOTO</button>
+        <button class="btn btn-secondary" id="cameraBtn" style="margin-top:0.5rem;">🔄 Nyalakan Kamera</button>
+        <button class="btn btn-secondary" id="clearBtn" style="margin-top:0.5rem;">🗑️ Reset Foto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITOR -->
+<div class="editor-modal" id="editorModal">
+  <div class="editor-card">
+    <div class="editor-header">
+      <h2>🎨 Edit Strip Foto</h2>
+      <button class="btn btn-secondary" style="width:auto; padding:0.4rem 0.9rem;" id="closeEditorBtn">✕ Tutup</button>
+    </div>
+
+    <div class="editor-body">
+      <div class="editor-canvas-wrap" style="position:relative;">
+        <canvas id="editorCanvas"></canvas>
+      </div>
+
+      <div class="editor-controls">
+        <div class="control-group">
+          <label>📝 Teks Judul (atas)</label>
+          <input type="text" id="titleInput" placeholder="Contoh: My Love 💕" maxlength="30" value="My Love 💕">
+        </div>
+
+        <div class="control-group">
+          <label>📅 Teks Bawah</label>
+          <input type="text" id="subtitleInput" placeholder="Contoh: 14 Feb 2025" maxlength="30">
+        </div>
+
+        <div class="control-group">
+          <label>🎨 Warna Latar Strip</label>
+          <input type="color" id="bgColorInput" value="#ffffff">
+        </div>
+
+        <div class="control-group">
+          <label>🌈 Warna Teks</label>
+          <input type="color" id="textColorInput" value="#1a1a2e">
+        </div>
+
+        <div class="control-group">
+          <label>🔠 Ukuran Teks: <span id="fontSizeVal">24</span>px</label>
+          <input type="range" id="fontSizeInput" min="12" max="48" value="24">
+        </div>
+
+        <div class="control-group">
+          <label>💫 Stiker (klik untuk tambah)</label>
+          <div class="emoji-picker" id="emojiPicker"></div>
+        </div>
+
+        <div class="control-group">
+          <label>⚙️ Aksi Stiker Terpilih</label>
+          <div class="btn-row">
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.5rem;" id="stickerBigger">🔍+</button>
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.5rem;" id="stickerSmaller">🔍−</button>
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.5rem;" id="stickerRotate">🔄</button>
+            <button class="btn btn-secondary" style="font-size:0.75rem; padding:0.5rem; color:#ff6b6b;" id="stickerDelete">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-actions">
+      <button class="btn btn-secondary" id="resetEditBtn">↩️ Reset Edit</button>
+      <button class="btn btn-primary" id="applyEditBtn">✅ Terapkan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// STATE
+// ============================================
+const state = {
+  photos: [],          // array canvas hasil jepretan
+  stripCount: 3,       // jumlah foto per strip
+  filter: 'normal',    // filter aktif
+  stream: null,
+  capturing: false,
+  // editor state
+  edit: {
+    title: 'My Love 💕',
+    subtitle: '',
+    bgColor: '#ffffff',
+    textColor: '#1a1a2e',
+    fontSize: 24,
+    stickers: [],       // {emoji, x, y, size, rotation}
+    selectedSticker: -1,
+  },
+  finalStrip: null,    // canvas final
+};
+
+// ============================================
+// KAMERA
+// ============================================
+const video = document.getElementById('video');
+
+async function startCamera() {
+  try {
+    if (state.stream) {
+      state.stream.getTracks().forEach(t => t.stop());
+    }
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      audio: false
+    });
+    video.srcObject = state.stream;
+    await video.play();
+    applyFilterToVideo();
+  } catch (err) {
+    alert('❌ Tidak bisa mengakses kamera: ' + err.message + '\n\nPastikan izin kamera diizinkan & pakai HTTPS atau localhost.');
+  }
+}
+
+function applyFilterToVideo() {
+  video.className = '';
+  if (state.filter === 'vintage') video.classList.add('filter-vintage');
+  else if (state.filter === 'film') video.classList.add('filter-film');
+  else if (state.filter === 'mono') video.classList.add('filter-mono');
+}
+
+// ============================================
+// FILTER (Canvas)
+// ============================================
+function applyFilterToCanvas(ctx, w, h, filter) {
+  if (filter === 'normal') return;
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    let r = data[i], g = data[i+1], b = data[i+2];
+
+    if (filter === 'vintage') {
+      // Sepia + sedikit warm
+      const tr = 0.393 * r + 0.769 * g + 0.189 * b;
+      const tg = 0.349 * r + 0.686 * g + 0.168 * b;
+      const tb = 0.272 * r + 0.534 * g + 0.131 * b;
+      r = Math.min(255, tr * 1.05 + 10);
+      g = Math.min(255, tg * 1.02);
+      b = Math.min(255, tb * 0.9);
+    } else if (filter === 'film') {
+      // Film: contrast tinggi, sedikit desaturate & cool shadow
+      r = Math.min(255, (r - 128) * 1.25 + 128 + 10);
+      g = Math.min(255, (g - 128) * 1.25 + 128 + 5);
+      b = Math.min(255, (b - 128) * 1.25 + 128 + 20);
+      // Desaturate sedikit
+      const gray = 0.3 * r + 0.59 * g + 0.11 * b;
+      r = r * 0.75 + gray * 0.25;
+      g = g * 0.75 + gray * 0.25;
+      b = b * 0.75 + gray * 0.25;
+    } else if (filter === 'mono') {
+      // Monochrome contrast
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+      const contrast = 1.3;
+      const c = (gray - 128) * contrast + 128;
+      r = g = b = Math.max(0, Math.min(255, c));
+    }
+
+    data[i] = Math.max(0, Math.min(255, r));
+    data[i+1] = Math.max(0, Math.min(255, g));
+    data[i+2] = Math.max(0, Math.min(255, b));
+  }
+  ctx.putImageData(imageData, 0, 0);
+}
+
+// ============================================
+// CAPTURE FOTO
+// ============================================
+async function startCapture() {
+  if (state.capturing) return;
+  if (!state.stream) {
+    alert('Nyalakan kamera terlebih dahulu!');
+    return;
+  }
+
+  state.capturing = true;
+  state.photos = [];
+  updateCaptureUI(true);
+
+  const count = state.stripCount;
+
+  for (let i = 0; i < count; i++) {
+    await showCountdown(3, i + 1, count);
+    const photo = captureFrame();
+    state.photos.push(photo);
+    triggerFlash();
+    updateProgress(i + 1, count);
+    await sleep(400);
+  }
+
+  state.capturing = false;
+  updateCaptureUI(false);
+  buildStrip();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function showCountdown(from, current, total) {
+  return new Promise(resolve => {
+    const el = document.getElementById('countdown');
+    let n = from;
+    const updateInfo = document.getElementById('progressInfo');
+    if (updateInfo) updateInfo.textContent = `Foto ${current} dari ${total} — bersiap...`;
+
+    const tick = () => {
+      if (n === 0) {
+        el.classList.add('hidden');
+        el.textContent = '';
+        resolve();
+        return;
+      }
+      el.classList.remove('hidden');
+      el.textContent = n;
+      // restart animation
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = 'pop 0.9s ease-out';
+      n--;
+      setTimeout(tick, 900);
+    };
+    tick();
+  });
+}
+
+function captureFrame() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 480;
+  const ctx = canvas.getContext('2d');
+
+  // Mirror video (karena video di-mirror via CSS)
+  ctx.save();
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
+
+  // Terapkan filter pada hasil
+  applyFilterToCanvas(ctx, canvas.width, canvas.height, state.filter);
+
+  return canvas;
+}
+
+function triggerFlash() {
+  const flash = document.getElementById('flash');
+  flash.classList.remove('active');
+  void flash.offsetWidth;
+  flash.classList.add('active');
+  setTimeout(() => flash.classList.remove('active'), 400);
+}
+
+function updateProgress(current, total) {
+  document.getElementById('progressInfo').textContent = `Foto: ${current} / ${total}`;
+}
+
+function updateCaptureUI(active) {
+  const btn = document.getElementById('captureBtn');
+  const otherBtns = document.querySelectorAll('#cameraBtn, #clearBtn, .strip-opt, .filter-opt');
+  if (active) {
+    btn.classList.add('recording');
+    btn.textContent = '⏳ SEDANG FOTO...';
+    btn.disabled = true;
+    otherBtns.forEach(b => b.style.pointerEvents = 'none');
+  } else {
+    btn.classList.remove('recording');
+    btn.textContent = '📸 MULAI FOTO';
+    btn.disabled = false;
+    otherBtns.forEach(b => b.style.pointerEvents = '');
+  }
+}
+
+// ============================================
+// BUILD STRIP (Gabungkan foto jadi satu strip)
+// ============================================
+function buildStrip(customState = null) {
+  const s = customState || state.edit;
+  const count = state.photos.length;
+  if (count === 0) return;
+
+  const photoW = 640;
+  const photoH = 480;
+  const padding = 30;
+  const gap = 20;
+  const topSpace = s.title ? 70 : 30;
+  const bottomSpace = (s.subtitle ? 60 : 30);
+
+  const stripW = photoW + padding * 2;
+  const stripH = topSpace + bottomSpace + count * photoH + (count - 1) * gap + 20;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = stripW;
+  canvas.height = stripH;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = s.bgColor;
+  ctx.fillRect(0, 0, stripW, stripH);
+
+  // Border dekoratif
+  ctx.strokeStyle = s.textColor;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(10, 10, stripW - 20, stripH - 20);
+
+  // Title
+  if (s.title) {
+    ctx.fillStyle = s.textColor;
+    ctx.font = `bold ${s.fontSize + 8}px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.title, stripW / 2, 40);
+  }
+
+  // Foto
+  let y = topSpace;
+  state.photos.forEach((photo, i) => {
+    ctx.drawImage(photo, padding, y, photoW, photoH);
+    // Border putih tipis di tiap foto
+    ctx.strokeStyle = s.textColor;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(padding, y, photoW, photoH);
+    y += photoH + gap;
+  });
+
+  // Subtitle
+  if (s.subtitle) {
+    ctx.fillStyle = s.textColor;
+    ctx.font = `italic ${s.fontSize - 4}px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.subtitle, stripW / 2, stripH - 40);
+  }
+
+  // Stiker
+  s.stickers.forEach(st => {
+    ctx.save();
+    ctx.translate(st.x * stripW, st.y * stripH);
+    ctx.rotate((st.rotation || 0) * Math.PI / 180);
+    ctx.font = `${st.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(st.emoji, 0, 0);
+    ctx.restore();
+  });
+
+  // Tampilkan preview
+  state.finalStrip = canvas;
+  const previewImg = document.getElementById('previewImg');
+  previewImg.src = canvas.toDataURL('image/png');
+  document.getElementById('previewArea').classList.add('show');
+}
+
+// ============================================
+// EDITOR
+// ============================================
+const editorModal = document.getElementById('editorModal');
+const editorCanvas = document.getElementById('editorCanvas');
+
+function openEditor() {
+  if (!state.finalStrip) {
+    alert('Belum ada foto untuk diedit. Ambil foto dulu ya!');
+    return;
+  }
+
+  // Copy state edit
+  editorModal.classList.add('show');
+
+  // Render canvas besar
+  editorCanvas.width = state.finalStrip.width;
+  editorCanvas.height = state.finalStrip.height;
+  const ctx = editorCanvas.getContext('2d');
+  ctx.drawImage(state.finalStrip, 0, 0);
+
+  // Sync controls
+  document.getElementById('titleInput').value = state.edit.title;
+  document.getElementById('subtitleInput').value = state.edit.subtitle;
+  document.getElementById('bgColorInput').value = state.edit.bgColor;
+  document.getElementById('textColorInput').value = state.edit.textColor;
+  document.getElementById('fontSizeInput').value = state.edit.fontSize;
+  document.getElementById('fontSizeVal').textContent = state.edit.fontSize;
+
+  // Render stiker overlay di canvas + handlers
+  setupStickerInteractions();
+  redrawEditor();
+}
+
+function redrawEditor() {
+  const ctx = editorCanvas.getContext('2d');
+
+  // Rebuild strip dengan state edit
+  const temp = buildStripData();
+  ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+  ctx.drawImage(temp, 0, 0);
+
+  // Update marker stiker terpilih (opsional, kita pakai DOM overlay nanti)
+}
+
+function buildStripData() {
+  // Sama seperti buildStrip tapi return canvas
+  const s = state.edit;
+  const count = state.photos.length;
+  const photoW = 640, photoH = 480;
+  const padding = 30, gap = 20;
+  const topSpace = s.title ? 70 : 30;
+  const bottomSpace = (s.subtitle ? 60 : 30);
+
+  const stripW = photoW + padding * 2;
+  const stripH = topSpace + bottomSpace + count * photoH + (count - 1) * gap + 20;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = stripW;
+  canvas.height = stripH;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = s.bgColor;
+  ctx.fillRect(0, 0, stripW, stripH);
+
+  ctx.strokeStyle = s.textColor;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(10, 10, stripW - 20, stripH - 20);
+
+  if (s.title) {
+    ctx.fillStyle = s.textColor;
+    ctx.font = `bold ${s.fontSize + 8}px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.title, stripW / 2, 40);
+  }
+
+  let y = topSpace;
+  state.photos.forEach(photo => {
+    ctx.drawImage(photo, padding, y, photoW, photoH);
+    ctx.strokeStyle = s.textColor;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(padding, y, photoW, photoH);
+    y += photoH + gap;
+  });
+
+  if (s.subtitle) {
+    ctx.fillStyle = s.textColor;
+    ctx.font = `italic ${s.fontSize - 4}px 'Segoe UI', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.subtitle, stripW / 2, stripH - 40);
+  }
+
+  // Stiker digambar di sini
+  s.stickers.forEach(st => {
+    ctx.save();
+    ctx.translate(st.x * stripW, st.y * stripH);
+    ctx.rotate((st.rotation || 0) * Math.PI / 180);
+    ctx.font = `${st.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(st.emoji, 0, 0);
+    ctx.restore();
+  });
+
+  return canvas;
+}
+
+// ============================================
+// STIKER INTERACTIONS
+// ============================================
+const STICKER_EMOJIS = ['💕','💖','💘','💝','💞','❤️','😍','🥰','😘','🌸','🌺','🌻','🌈','⭐','✨','🎀','🎉','🎈','🦋','🐰','🐱','🐻','🍓','🍰','🍕','📸','🎵','☀️','🌙','🔥','💯','👑','💎','🍀','🌹','😎','🤩','😜','🤗','🥳'];
+
+function initEmojiPicker() {
+  const picker = document.getElementById('emojiPicker');
+  picker.innerHTML = '';
+  STICKER_EMOJIS.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.textContent = e;
+    btn.type = 'button';
+    btn.onclick = () => addSticker(e);
+    picker.appendChild(btn);
+  });
+}
+
+function addSticker(emoji) {
+  state.edit.stickers.push({
+    emoji,
+    x: 0.5,
+    y: 0.5,
+    size: 64,
+    rotation: 0,
+  });
+  state.edit.selectedSticker = state.edit.stickers.length - 1;
+  redrawEditor();
+  setupStickerInteractions();
+}
+
+let dragState = null;
+
+function setupStickerInteractions() {
+  const wrap = document.querySelector('.editor-canvas-wrap');
+  // Hapus overlay lama
+  const old = wrap.querySelector('.stickers-layer');
+  if (old) old.remove();
+
+  const layer = document.createElement('div');
+  layer.className = 'stickers-layer';
+  layer.style.position = 'absolute';
+  layer.style.left = '0';
+  layer.style.top = '0';
+  layer.style.width = '100%';
+  layer.style.height = '100%';
+  layer.style.pointerEvents = 'none';
+
+  // Hitung posisi canvas di dalam wrap
+  const canvasRect = editorCanvas.getBoundingClientRect();
+  const wrapRect = wrap.getBoundingClientRect();
+  const offsetX = canvasRect.left - wrapRect.left;
+  const offsetY = canvasRect.top - wrapRect.top;
+
+  state.edit.stickers.forEach((st, i) => {
+    const el = document.createElement('div');
+    el.className = 'sticker-item' + (i === state.edit.selectedSticker ? ' selected' : '');
+    el.textContent = st.emoji;
+    // Posisi relatif ke canvas
+    const xPx = offsetX + st.x * canvasRect.width;
+    const yPx = offsetY + st.y * canvasRect.height;
+    const sizePx = st.size * (canvasRect.width / editorCanvas.width) * 1.2;
+    el.style.left = xPx + 'px';
+    el.style.top = yPx + 'px';
+    el.style.fontSize = sizePx + 'px';
+    el.style.transform = `translate(-50%, -50%) rotate(${st.rotation}deg)`;
+    el.style.pointerEvents = 'auto';
+
+    el.addEventListener('mousedown', (e) => startDrag(e, i));
+    el.addEventListener('touchstart', (e) => startDrag(e, i), { passive: false });
+
+    layer.appendChild(el);
+  });
+
+  wrap.appendChild(layer);
+}
+
+function startDrag(e, index) {
+  e.preventDefault();
+  state.edit.selectedSticker = index;
+  const wrap = document.querySelector('.editor-canvas-wrap');
+  const canvasRect = editorCanvas.getBoundingClientRect();
+  const wrapRect = wrap.getBoundingClientRect();
+  const offsetX = canvasRect.left - wrapRect.left;
+  const offsetY = canvasRect.top - wrapRect.top;
+
+  const st = state.edit.stickers[index];
+
+  const getPoint = (ev) => {
+    if (ev.touches) return { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
+    return { x: ev.clientX, y: ev.clientY };
+  };
+
+  const start = getPoint(e);
+
+  dragState = {
+    index,
+    offsetX: start.x - (wrapRect.left + offsetX + st.x * canvasRect.width),
+    offsetY: start.y - (wrapRect.top + offsetY + st.y * canvasRect.height),
+    canvasRect,
+    wrapRect,
+    offsetXCanvas: offsetX,
+    offsetYCanvas: offsetY,
+  };
+
+  // Update overlay visuals
+  setupStickerInteractions();
+
+  const onMove = (ev) => {
+    if (!dragState) return;
+    ev.preventDefault();
+    const p = getPoint(ev);
+    const st = state.edit.stickers[dragState.index];
+    const xPx = p.x - dragState.wrapRect.left - dragState.offsetX;
+    const yPx = p.y - dragState.wrapRect.top - dragState.offsetY;
+    st.x = Math.max(0, Math.min(1, xPx / dragState.canvasRect.width));
+    st.y = Math.max(0, Math.min(1, yPx / dragState.canvasRect.height));
+
+    // Update visually only (fast)
+    const items = document.querySelectorAll('.sticker-item');
+    if (items[dragState.index]) {
+      items[dragState.index].style.left = xPx + 'px';
+      items[dragState.index].style.top = yPx + 'px';
+    }
+  };
+
+  const onUp = () => {
+    dragState = null;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchend', onUp);
+    redrawEditor();
+    setupStickerInteractions();
+  };
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+}
+
+// ============================================
+// STICKER ACTIONS
+// ============================================
+function withSelectedSticker(fn) {
+  if (state.edit.selectedSticker < 0 || state.edit.selectedSticker >= state.edit.stickers.length) {
+    alert('Pilih stiker dulu dengan klik stiker di canvas!');
+    return;
+  }
+  fn(state.edit.stickers[state.edit.selectedSticker]);
+  redrawEditor();
+  setupStickerInteractions();
+}
+
+document.getElementById('stickerBigger').onclick = () => withSelectedSticker(st => st.size = Math.min(300, st.size + 15));
+document.getElementById('stickerSmaller').onclick = () => withSelectedSticker(st => st.size = Math.max(20, st.size - 15));
+document.getElementById('stickerRotate').onclick = () => withSelectedSticker(st => st.rotation = (st.rotation + 15) % 360);
+document.getElementById('stickerDelete').onclick = () => {
+  if (state.edit.selectedSticker < 0) { alert('Pilih stiker dulu!'); return; }
+  state.edit.stickers.splice(state.edit.selectedSticker, 1);
+  state.edit.selectedSticker = -1;
+  redrawEditor();
+  setupStickerInteractions();
+};
+
+// ============================================
+// EDITOR INPUT HANDLERS
+// ============================================
+document.getElementById('titleInput').oninput = (e) => { state.edit.title = e.target.value; redrawEditor(); };
+document.getElementById('subtitleInput').oninput = (e) => { state.edit.subtitle = e.target.value; redrawEditor(); };
+document.getElementById('bgColorInput').oninput = (e) => { state.edit.bgColor = e.target.value; redrawEditor(); };
+document.getElementById('textColorInput').oninput = (e) => { state.edit.textColor = e.target.value; redrawEditor(); };
+document.getElementById('fontSizeInput').oninput = (e) => {
+  state.edit.fontSize = parseInt(e.target.value);
+  document.getElementById('fontSizeVal').textContent = e.target.value;
+  redrawEditor();
+};
+
+// ============================================
+// APPLY / CLOSE EDITOR
+// ============================================
+document.getElementById('applyEditBtn').onclick = () => {
+  const finalCanvas = buildStripData();
+  state.finalStrip = finalCanvas;
+  document.getElementById('previewImg').src = finalCanvas.toDataURL('image/png');
+  editorModal.classList.remove('show');
+};
+
+document.getElementById('closeEditorBtn').onclick = () => {
+  editorModal.classList.remove('show');
+};
+
+document.getElementById('resetEditBtn').onclick = () => {
+  state.edit = {
+    title: 'My Love 💕',
+    subtitle: '',
+    bgColor: '#ffffff',
+    textColor: '#1a1a2e',
+    fontSize: 24,
+    stickers: [],
+    selectedSticker: -1,
+  };
+  document.getElementById('titleInput').value = state.edit.title;
+  document.getElementById('subtitleInput').value = state.edit.subtitle;
+  document.getElementById('bgColorInput').value = state.edit.bgColor;
+  document.getElementById('textColorInput').value = state.edit.textColor;
+  document.getElementById('fontSizeInput').value = state.edit.fontSize;
+  document.getElementById('fontSizeVal').textContent = state.edit.fontSize;
+  redrawEditor();
+  setupStickerInteractions();
+};
+
+// ============================================
+// DOWNLOAD
+// ============================================
+document.getElementById('downloadBtn').onclick = () => {
+  if (!state.finalStrip) return;
+  const link = document.createElement('a');
+  link.download = `photobooth-${Date.now()}.png`;
+  link.href = state.finalStrip.toDataURL('image/png');
+  link.click();
+};
+
+// ============================================
+// UI OPTIONS
+// ============================================
+document.querySelectorAll('.strip-opt').forEach(el => {
+  el.onclick = () => {
+    if (state.capturing) return;
+    document.querySelectorAll('.strip-opt').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    state.stripCount = parseInt(el.dataset.count);
+    state.photos = [];
+    state.finalStrip = null;
+    document.getElementById('previewArea').classList.remove('show');
+    document.getElementById('progressInfo').textContent = `Foto: 0 / ${state.stripCount}`;
+  };
+});
+
+document.querySelectorAll('.filter-opt').forEach(el => {
+  el.onclick = () => {
+    if (state.capturing) return;
+    document.querySelectorAll('.filter-opt').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    state.filter = el.dataset.filter;
+    applyFilterToVideo();
+  };
+});
+
+// ============================================
+// BUTTONS
+// ============================================
+document.getElementById('captureBtn').onclick = startCapture;
+document.getElementById('cameraBtn').onclick = startCamera;
+document.getElementById('clearBtn').onclick = () => {
+  if (state.capturing) return;
+  state.photos = [];
+  state.finalStrip = null;
+  document.getElementById('previewArea').classList.remove('show');
+  document.getElementById('progressInfo').textContent = `Foto: 0 / ${state.stripCount}`;
+};
+document.getElementById('editBtn').onclick = openEditor;
+
+// ============================================
+// INIT
+// ============================================
+initEmojiPicker();
+startCamera();
+
+// Handle resize: refresh sticker positions
+window.addEventListener('resize', () => {
+  if (editorModal.classList.contains('show')) {
+    setupStickerInteractions();
+  }
+});
+</script>
+</body>
+</html>
